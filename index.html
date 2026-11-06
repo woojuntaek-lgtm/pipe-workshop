@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#151a22">
+<title>파이프라인 공방</title>
+<meta name="description" content="동전 던지기를 87%로 맞혔다? — 파이썬 데이터 분석 프로젝트: CRISP-DM, 첫 탐색 다섯 줄, 시계열 결측치 ffill과 interpolate, 긴 공백의 함정, 특성 만들기, 데이터 누수와 파이프라인, 재현성, 함수로 묶기, base64 보고서 자동화를 손으로 체험하는 앱">
+<style>
+:root{--bg:#151a22;--card:#1c232e;--card2:#25303d;--fg:#eff3f8;--mut:#a3b0c2;--line:#33425a;
+--a:#7cc4ff;--b:#ff9b5c;--ok:#6fdc9a;--bad:#ff7d7d;--gold:#ffd166;--pur:#b79cff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;line-height:1.55}
+[hidden]{display:none!important}
+.wrap{max-width:560px;margin:0 auto;padding:12px 14px 40px}
+h1{font-size:1.2rem;margin:6px 0}
+h1 small{display:block;font-size:.76rem;color:var(--mut);font-weight:400}
+.tabs{display:flex;gap:5px;margin:10px 0}
+.tabs button{flex:1;padding:9px 2px;border:1px solid var(--line);background:var(--card);color:var(--mut);border-radius:10px;font-size:.82rem;font-weight:600}
+.tabs button.on{background:#24406e;color:#fff;border-color:var(--a)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+h2{font-size:1rem;margin:2px 0 8px}
+.note{font-size:.86rem;color:var(--mut);margin:8px 0 0}
+.note b{color:var(--fg)}
+.btn{padding:11px 14px;border-radius:12px;border:0;background:linear-gradient(135deg,#2f6fd0,#7cc4ff);color:#fff;font-weight:800;font-size:.95rem;flex:1}
+.btn.sec{background:var(--card2);border:1px solid var(--line);color:var(--fg);font-weight:700}
+.btn.sm{flex:none;padding:7px 11px;font-size:.82rem}
+.btn:disabled{opacity:.4}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row+.row{margin-top:8px}
+.pill{padding:7px 11px;border-radius:999px;border:1px solid var(--line);background:var(--card2);color:var(--fg);font-size:.84rem}
+.pill.on{border-color:var(--gold);background:#4a3e1a;color:#fff}
+.lbl{font-size:.8rem;color:var(--mut)}
+canvas{display:block;width:100%;border-radius:12px;background:#10141b;margin-top:8px;touch-action:none}
+.say{background:#16304c;border-left:3px solid var(--a);border-radius:8px;padding:9px 11px;font-size:.92rem;margin-top:10px}
+.say b{color:#fff}
+.say.q{border-left-color:var(--b);background:#2e2118}
+.res{margin-top:10px;font-size:.92rem;border-radius:10px;padding:10px 12px}
+.res.g{background:#16352a;border:1px solid #2f7a52}
+.res.r{background:#3a1d1d;border:1px solid #8a3a3a}
+.res.y{background:#3a3218;border:1px solid #8a7a3a}
+.code{background:#0f131a;border:1px solid #26324a;border-radius:10px;padding:9px 11px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;line-height:1.65;white-space:pre;overflow-x:auto;margin-top:8px}
+.code .k{color:#ff9bd2}.code .s{color:#a5e38a}.code .c{color:#6b7a90}.code .n{color:#ffd166}.code .f{color:#7cc4ff}
+.out{background:#0b0e13;border-radius:10px;padding:8px 11px;margin-top:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;white-space:pre-wrap;word-break:break-all}
+.out .p{color:#6b7a90}.out .o{color:#6fdc9a}.out .w{color:#ffd166}.out .e{color:#ff7d7d}
+.opts{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.opts button{text-align:left;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--fg);font-size:.92rem}
+.opts button.right{border-color:#6fdc9a;background:#16352a}
+.opts button.wrong{border-color:#ff7d7d;background:#3a1d1d}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.stats div{background:var(--card2);border-radius:10px;padding:7px 6px;text-align:center;font-size:.74rem;color:var(--mut)}
+.stats div b{display:block;font-size:1.02rem;color:var(--fg);font-variant-numeric:tabular-nums}
+.sl{display:grid;grid-template-columns:84px 1fr 54px;gap:8px;align-items:center;font-size:.84rem;margin-top:6px}
+.sl b{text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%}
+input[type=text]{flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#10141b;color:var(--fg);font-size:.92rem}
+.sum3{margin-top:12px;background:linear-gradient(135deg,#1d3358,#3a2a5a);border-radius:14px;padding:12px 14px}
+.sum3 ol{margin:4px 0;padding-left:20px;font-size:.92rem}
+.mine{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.mine div{display:flex;justify-content:space-between;gap:8px;background:var(--card2);border-radius:10px;padding:8px 10px;font-size:.88rem}
+.mine button{border:0;background:none;color:var(--mut);font-size:.9rem}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:999px;font-size:.9rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.on{opacity:1}
+footer{text-align:center;color:var(--mut);font-size:.78rem;margin-top:18px}
+footer a{color:var(--mut)}
+.tw{overflow-x:auto;margin-top:8px;border-radius:10px;border:1px solid #26324a}
+table.df{border-collapse:collapse;width:100%;font-size:.82rem;font-variant-numeric:tabular-nums;background:#0f131a}
+table.df th,table.df td{padding:6px 8px;text-align:center;border-bottom:1px solid #222b38}
+table.df thead th{background:#1a2230;color:#a3b0c2}
+.ax{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+.ax button{padding:6px 9px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--fg);font-size:.8rem}
+.mat{display:inline-grid;gap:2px 10px;padding:4px 8px;border-left:2px solid #6b7a90;border-right:2px solid #6b7a90;border-radius:4px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;text-align:right;vertical-align:middle}
+.mrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;font-size:.9rem}
+.rt{border-collapse:collapse;margin:8px auto 0;font-variant-numeric:tabular-nums}
+.rt th,.rt td{width:46px;height:38px;text-align:center;border:1px solid #26324a;font-size:.88rem}
+.rt th{background:#1a2230;color:#a3b0c2;font-size:.74rem;font-weight:600}
+.rt td.b{color:#5a6b85}
+.rt td.f{color:#ffd166;font-weight:800;background:#3a3218}
+.flow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.flow button{flex:1 1 30%;padding:9px 4px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--fg);font-size:.8rem}
+.flow button.on{border-color:var(--gold);background:#4a3e1a}
+.rep{background:#fff;color:#222;border-radius:10px;padding:12px;margin-top:8px;font-size:.82rem}
+.rep h3{margin:0 0 6px;font-size:1rem}
+.rep table{border-collapse:collapse;font-size:.78rem}
+.rep td,.rep th{border:1px solid #ccc;padding:3px 6px}
+.rep img{max-width:100%;display:block;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🛠️ 파이프라인 공방<small>동전 던지기를 87%로 맞혔다? — 데이터 분석 프로젝트</small></h1>
+<div class="tabs">
+  <button class="on" data-tab="t1">① 87%의 비밀</button>
+  <button data-tab="t2">② 흐름·탐색</button>
+  <button data-tab="t3">③ 빈칸·특성</button>
+  <button data-tab="t4">④ 재현·보고서</button>
+</div>
+
+<!-- ① -->
+<section id="tab-t1">
+  <div class="card">
+    <h2>🪙 첫 장면: 패턴이 하나도 없는 데이터</h2>
+    <p class="note" style="margin-top:0">표본 100개 × 열 N개, 모든 칸은 난수, 정답은 동전 던지기. 가장 쓸모 있어 보이는 열 k개를 골라 로지스틱 회귀 5겹 교차 검증 — <b>브라우저에서 직접</b> 계산합니다.</p>
+    <div class="sl"><span>열 개수 N</span><input type="range" id="lkN" min="0" max="4" value="4"><b id="lkNv">10000</b></div>
+    <div class="sl"><span>고를 열 k</span><input type="range" id="lkK" min="5" max="50" step="5" value="20"><b id="lkKv">20</b></div>
+    <div class="row" style="margin-top:6px"><button class="btn" id="lkRun">새 난수로 실험 ▶</button></div>
+    <canvas id="lkCv"></canvas>
+    <div class="stats"><div>전체로 고른 뒤 CV<b id="lkA">-</b></div><div>CV 안에서 고름<b id="lkB">-</b></div><div>정답 1의 비율<b id="lkY">-</b></div></div>
+    <div id="lkMsg"></div>
+    <p class="note">원고 실험(numpy 시드 0, 열 10,000, k = 20): 누수 <b>87%</b>, 파이프라인 <b>47%</b>. 이 앱은 자체 난수라 숫자가 조금 다르지만 같은 현상이 나옵니다.</p>
+  </div>
+
+  <div class="card">
+    <h2>🔎 우연히 잘 맞아 보이는 열</h2>
+    <p class="note" style="margin-top:0">방금 실험에서 전체 데이터로 고른 1등 열. 가로 = 그 열의 값, 세로 = 정답(0/1).</p>
+    <canvas id="spCv"></canvas>
+    <div id="spMsg"></div>
+  </div>
+</section>
+
+<!-- ② -->
+<section id="tab-t2" hidden>
+  <div class="card">
+    <h2>🗺️ 프로젝트의 지도, CRISP-DM</h2>
+    <p class="note" style="margin-top:0">여섯 단계를 눌러 보세요. 화살표는 한 바퀴 돌고 끝나지 않습니다.</p>
+    <canvas id="crCv"></canvas>
+    <div class="flow" id="crBtns"></div>
+    <div id="crBox"></div>
+  </div>
+
+  <div class="card">
+    <h2>🔍 처음 받은 데이터, 다섯 줄</h2>
+    <p class="note" style="margin-top:0">가상 센서 기록 8행 (설명용). 한 줄씩 돌려 보세요.</p>
+    <div class="tw"><table class="df" id="edTb"></table></div>
+    <div class="ax" id="edBtns"></div>
+    <div class="out" id="edOut"></div>
+    <div id="edNote"></div>
+  </div>
+</section>
+
+<!-- ③ -->
+<section id="tab-t3" hidden>
+  <div class="card">
+    <h2>❓ 퀴즈 ① 시간 순서로 10, 빈칸, 빈칸, 16. interpolate로 채우면?</h2>
+    <div class="opts" id="q1">
+      <button data-a="a">10과 10</button>
+      <button data-a="b">12와 14</button>
+      <button data-a="c">13과 13</button>
+    </div>
+    <div id="q1Msg"></div>
+  </div>
+
+  <div class="card">
+    <h2>🌡️ 긴 공백의 함정</h2>
+    <p class="note" style="margin-top:0">하루 주기 온도 20 + 5·sin(2π(t−8)/24), 72시간 (원고 메모의 식). 30시부터 비운 칸 수를 늘려 보세요.</p>
+    <div class="sl"><span>빈 칸 수</span><input type="range" id="gpL" min="1" max="30" value="2"><b id="gpLv">2</b></div>
+    <div class="row" style="margin-top:6px"><button class="pill on" data-gm="lin">interpolate</button><button class="pill" data-gm="ff">ffill</button><button class="pill" data-gm="lim">interpolate(limit=3)</button></div>
+    <canvas id="gpCv"></canvas>
+    <div class="out" id="gpOut"></div>
+  </div>
+
+  <div class="card">
+    <h2>🧱 특성 만들기: rolling · diff · get_dummies</h2>
+    <p class="note" style="margin-top:0">위 온도에서 앞 12시간 + 상태 열(가상). 만들 특성을 골라 보세요.</p>
+    <div class="row"><button class="pill on" data-ft="roll">rolling(6).mean()</button><button class="pill" data-ft="diff">diff()</button><button class="pill" data-ft="dum">get_dummies</button></div>
+    <div class="tw"><table class="df" id="ftTb"></table></div>
+    <div class="out" id="ftOut"></div>
+  </div>
+</section>
+
+<!-- ④ -->
+<section id="tab-t4" hidden>
+  <div class="card">
+    <h2>🧪 해법: 배우는 단계는 학습용으로만 fit</h2>
+    <div class="row"><button class="pill on" data-pp="leak">파이프라인 밖에서 고르기</button><button class="pill" data-pp="pipe">파이프라인 안에서 고르기</button></div>
+    <canvas id="ppCv"></canvas>
+    <div id="ppMsg"></div>
+    <div class="code"><span class="k">from</span> sklearn.pipeline <span class="k">import</span> make_pipeline
+<span class="k">from</span> sklearn.impute <span class="k">import</span> SimpleImputer
+<span class="k">from</span> sklearn.preprocessing <span class="k">import</span> StandardScaler
+<span class="k">from</span> sklearn.feature_selection <span class="k">import</span> SelectKBest, f_classif
+<span class="k">from</span> sklearn.linear_model <span class="k">import</span> LogisticRegression
+<span class="k">from</span> sklearn.model_selection <span class="k">import</span> StratifiedKFold, cross_val_score
+
+pipe = <span class="f">make_pipeline</span>(<span class="f">SimpleImputer</span>(), <span class="f">StandardScaler</span>(),
+                     <span class="f">SelectKBest</span>(f_classif, k=<span class="n">20</span>), <span class="f">LogisticRegression</span>())
+cv = <span class="f">StratifiedKFold</span>(<span class="n">5</span>, shuffle=<span class="k">True</span>, random_state=<span class="n">0</span>)
+<span class="f">print</span>(<span class="f">cross_val_score</span>(pipe, X, y, cv=cv).<span class="f">mean</span>())   <span class="c"># 0.47 — 정직한 숫자</span></div>
+  </div>
+
+  <div class="card">
+    <h2>🎲 같은 입력, 같은 결과: 시드</h2>
+    <p class="note" style="margin-top:0">①의 데이터로 파이프라인 교차 검증을 다시 돌립니다. 바뀌는 것은 <b>섞는 순서</b>뿐.</p>
+    <div class="row"><button class="pill on" data-sd="fix">random_state=0 고정</button><button class="pill" data-sd="free">고정 안 함</button></div>
+    <div class="row" style="margin-top:8px"><button class="btn" id="sdRun">다시 돌리기 ▶</button><button class="btn sec sm" id="sdClr">지우기</button></div>
+    <div class="out" id="sdOut"></div>
+    <p class="note">라이브러리 버전도 결과를 바꿀 수 있으니 <b>requirements.txt</b>에 적어 두고, 원본 데이터는 고치지 않고 따로 보관합니다.</p>
+  </div>
+
+  <div class="card">
+    <h2>🧩 흐름을 함수로 묶기</h2>
+    <div class="code"><span class="c"># 설정은 맨 위 한곳에</span>
+CONFIG = {<span class="s">'path'</span>: <span class="s">'data/raw.csv'</span>, <span class="s">'limit'</span>: <span class="n">3</span>, <span class="s">'seed'</span>: <span class="n">0</span>, <span class="s">'k'</span>: <span class="n">20</span>}
+
+<span class="k">def</span> <span class="f">load</span>(cfg):        <span class="k">return</span> pd.<span class="f">read_csv</span>(cfg[<span class="s">'path'</span>], parse_dates=[<span class="s">'time'</span>])
+<span class="k">def</span> <span class="f">clean</span>(df, cfg):
+    df = df.<span class="f">sort_values</span>(<span class="s">'time'</span>).<span class="f">drop_duplicates</span>()
+    df[<span class="s">'imputed'</span>] = df[<span class="s">'temp'</span>].<span class="f">isna</span>()           <span class="c"># 보간 표시 열</span>
+    df[<span class="s">'temp'</span>] = df[<span class="s">'temp'</span>].<span class="f">interpolate</span>(limit=cfg[<span class="s">'limit'</span>])
+    <span class="k">return</span> df
+<span class="k">def</span> <span class="f">features</span>(df):
+    df[<span class="s">'roll6'</span>] = df[<span class="s">'temp'</span>].<span class="f">rolling</span>(<span class="n">6</span>).<span class="f">mean</span>()
+    df[<span class="s">'d1'</span>] = df[<span class="s">'temp'</span>].<span class="f">diff</span>()
+    <span class="k">return</span> pd.<span class="f">get_dummies</span>(df, columns=[<span class="s">'state'</span>])
+<span class="k">def</span> <span class="f">evaluate</span>(df, cfg): ...                        <span class="c"># 파이프라인 + 교차 검증</span>
+<span class="k">def</span> <span class="f">report</span>(df, score, cfg): ...                   <span class="c"># f-string HTML</span>
+
+<span class="k">def</span> <span class="f">main</span>():
+    df = <span class="f">features</span>(<span class="f">clean</span>(<span class="f">load</span>(CONFIG), CONFIG))
+    <span class="f">report</span>(df, <span class="f">evaluate</span>(df, CONFIG), CONFIG)
+
+<span class="k">if</span> __name__ == <span class="s">'__main__'</span>:
+    <span class="f">main</span>()                                         <span class="c"># 명령 한 줄로 처음부터 끝까지</span></div>
+  </div>
+
+  <div class="card">
+    <h2>📄 보고서 자동화: 파일 하나에 표와 그림</h2>
+    <p class="note" style="margin-top:0">①의 결과로 보고서를 만듭니다. 그림은 PNG → base64 글자로 바꿔 &lt;img&gt; 안에 직접.</p>
+    <div class="row"><button class="btn" id="rpMake">보고서 만들기 ▶</button></div>
+    <div id="rpBox"></div>
+    <div class="out" id="rpOut"></div>
+    <div class="code">buf = io.<span class="f">BytesIO</span>(); fig.<span class="f">savefig</span>(buf, format=<span class="s">'png'</span>)
+b64 = base64.<span class="f">b64encode</span>(buf.<span class="f">getvalue</span>()).<span class="f">decode</span>()
+html = <span class="s">f'''&lt;h1&gt;분석 보고서&lt;/h1&gt;{table.to_html()}
+&lt;img src="data:image/png;base64,{b64}"&gt;'''</span>
+<span class="f">open</span>(<span class="s">'report.html'</span>, <span class="s">'w'</span>, encoding=<span class="s">'utf-8'</span>).<span class="f">write</span>(html)</div>
+  </div>
+
+  <div class="card">
+    <h2>❓ 퀴즈 ② 300KB짜리 PNG를 base64로 바꾸면 약 몇 KB?</h2>
+    <div class="opts" id="q2">
+      <button data-a="a">300KB</button>
+      <button data-a="b">400KB</button>
+      <button data-a="c">600KB</button>
+    </div>
+    <div id="q2Msg"></div>
+    <div class="sl"><span>원본 KB</span><input type="range" id="b6K" min="1" max="1000" value="300"><b id="b6Kv">300</b></div>
+    <div class="out" id="b6Out"></div>
+  </div>
+
+  <div class="card">
+    <h2>📌 세 줄 정리</h2>
+    <div class="sum3"><ol>
+      <li>분석 프로젝트는 <b>CRISP-DM 여섯 단계를 반복</b>하고, 처음 받은 데이터는 <b>다섯 줄</b>로 탐색한다.</li>
+      <li>시계열 빈칸은 성격에 맞게 채우되 <b>긴 공백은 표시</b>하고, 무엇이든 배우는 단계는 <b>학습용 데이터로만 fit</b>한다.</li>
+      <li><b>시드와 버전</b>을 고정하고 흐름을 <b>함수로 묶어</b>, 보고서까지 한 번에 다시 돌린다.</li>
+    </ol></div>
+  </div>
+
+  <div class="card">
+    <h2>🤔 생각해 볼 질문</h2>
+    <p class="note" style="margin-top:0">최근에 본 높은 정확도 가운데, 평가할 데이터를 <b>미리 엿본 단계</b>는 없었을까요? 다른 사람이 <b>똑같이 다시</b> 만들 수 있을까요? (이 기기에만 저장)</p>
+    <div class="row" style="margin-top:8px"><input type="text" id="myIn" maxlength="70" placeholder="예: 결측치를 전체 평균으로 먼저 채움 → 파이프라인 안으로"><button class="btn sm" id="myAdd">추가</button></div>
+    <div class="mine" id="mine"></div>
+  </div>
+</section>
+
+<footer>© 2026 정필 수심명 · <a href="https://blog.naver.com/omyman" target="_blank" rel="noopener">blog.naver.com/omyman</a><br>파이썬 13 부록 · 인터넷 없이 동작</footer>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),1800);}
+let touched=false;document.addEventListener('pointerdown',()=>{touched=true;},{once:true,capture:true});
+const vib=n=>{if(!touched)return;try{navigator.vibrate&&navigator.vibrate(n);}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function prep(cv,ratio){const dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth||320,h=Math.round(w*ratio);
+  cv.width=w*dpr;cv.height=h*dpr;cv.style.height=h+'px';const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);return{c,w,h};}
+function T(c,s,x,y,col,size,al,bl,wt){c.fillStyle=col;c.font=`${wt||''} ${size||12}px -apple-system,"Malgun Gothic",sans-serif`;c.textAlign=al||'center';c.textBaseline=bl||'middle';c.fillText(s,x,y);}
+function single(sel,attr,fn){$$(sel).forEach(b=>b.onclick=()=>{$$(sel).forEach(x=>x.classList.toggle('on',x===b));vib(8);fn(b.dataset[attr]);});}
+function quiz(id,ans,fn){$$(`#${id} button`).forEach(b=>b.onclick=()=>{const ok=b.dataset.a===ans;$$(`#${id} button`).forEach(x=>x.className=x.dataset.a===ans?'right':x===b?'wrong':'');vib(ok?[30,40,60]:80);$(`#${id}Msg`).innerHTML=fn(ok);});}
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function rr(c,x,y,w,h,r){r=Math.min(r,Math.abs(w)/2,Math.abs(h)/2);c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function arrow(c,x0,y0,x1,y1,col,lw){const a=Math.atan2(y1-y0,x1-x0);c.strokeStyle=col;c.fillStyle=col;c.lineWidth=lw||2;c.beginPath();c.moveTo(x0,y0);c.lineTo(x1-6*Math.cos(a),y1-6*Math.sin(a));c.stroke();c.beginPath();c.moveTo(x1,y1);c.lineTo(x1-9*Math.cos(a-.45),y1-9*Math.sin(a-.45));c.lineTo(x1-9*Math.cos(a+.45),y1-9*Math.sin(a+.45));c.closePath();c.fill();}
+const CA='#7cc4ff',CB='#ff9b5c',GO='#ffd166',OK='#6fdc9a',BAD='#ff7d7d',PU='#b79cff',MU='#a3b0c2',FG='#eff3f8';
+const f2=(v,d=2)=>(+v).toFixed(d);const fmt=n=>Math.round(n).toLocaleString('ko-KR');
+
+const pct=v=>(v*100).toFixed(0)+'%';
+
+/* ===== 누수 실험 ===== */
+const NV=[100,300,1000,3000,10000];let LK=null;
+function shuffle(a,r){for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function folds(y,seed){const r=rng(seed),c0=[],c1=[];y.forEach((v,i)=>(v?c1:c0).push(i));shuffle(c0,r);shuffle(c1,r);const F=[[],[],[],[],[]];c0.forEach((i,k)=>F[k%5].push(i));c1.forEach((i,k)=>F[(c0.length+k)%5].push(i));return F;}
+function topK(X,y,n,p,rows,k){const sc=new Float64Array(p);let n1=0;rows.forEach(i=>n1+=y[i]);const n0=rows.length-n1;
+  for(let j=0;j<p;j++){const o=j*n;let s0=0,s1=0,q0=0,q1=0;for(const i of rows){const v=X[o+i];if(y[i]){s1+=v;q1+=v*v;}else{s0+=v;q0+=v*v;}}const m0=s0/n0,m1=s1/n1,ssw=(q0-n0*m0*m0)+(q1-n1*m1*m1);sc[j]=(n0*n1/rows.length)*(m1-m0)**2/(ssw/(rows.length-2));}
+  return[...Array(p).keys()].sort((a,b)=>sc[b]-sc[a]).slice(0,k);}
+function solve(A,b){const n=b.length;for(let i=0;i<n;i++){let p=i;for(let k=i+1;k<n;k++)if(Math.abs(A[k][i])>Math.abs(A[p][i]))p=k;[A[i],A[p]]=[A[p],A[i]];[b[i],b[p]]=[b[p],b[i]];for(let k=i+1;k<n;k++){const f=A[k][i]/A[i][i];for(let j=i;j<n;j++)A[k][j]-=f*A[i][j];b[k]-=f*b[i];}}const x=Array(n).fill(0);for(let i=n-1;i>=0;i--){let s=b[i];for(let j=i+1;j<n;j++)s-=A[i][j]*x[j];x[i]=s/A[i][i];}return x;}
+/* 사이킷런 기본값과 같은 목적함수: ½‖w‖² + Σ로그손실 (C = 1), 절편은 벌점 없음 — 뉴턴법 */
+function logit(X,y,n,rows,cols){const d=cols.length+1;let w=Array(d).fill(0);const row=i=>[1,...cols.map(j=>X[j*n+i])];const R=rows.map(row);
+  for(let it=0;it<30;it++){const g=w.map((v,a)=>a?v:0),H=Array.from({length:d},(_,a)=>Array.from({length:d},(_,b)=>a===b&&a?1:0));
+    R.forEach((x,t)=>{const z=x.reduce((s,v,a)=>s+v*w[a],0),p=1/(1+Math.exp(-z)),e=p-y[rows[t]],q=p*(1-p);for(let a=0;a<d;a++){g[a]+=e*x[a];for(let b=0;b<d;b++)H[a][b]+=q*x[a]*x[b];}});
+    H[0][0]+=1e-9;const st=solve(H,g);let mx=0;w=w.map((v,a)=>{mx=Math.max(mx,Math.abs(st[a]));return v-st[a];});if(mx<1e-8)break;}
+  return x=>x.reduce((s,v,a)=>s+v*w[a+1],w[0])>0?1:0;}
+function cvScore(D,k,mode,seed){const{X,y,n,p}=D,F=folds(y,seed);const all=[...Array(n).keys()];const lk=mode==='leak'?topK(X,y,n,p,all,k):null;let acc=0;
+  F.forEach(test=>{const ts=new Set(test),train=all.filter(i=>!ts.has(i));const cols=lk||topK(X,y,n,p,train,k);const f=logit(X,y,n,train,cols);let ok=0;test.forEach(i=>{if(f(cols.map(j=>X[j*n+i]))===y[i])ok++;});acc+=ok/test.length/5;});return{acc,top:lk};}
+let lkSeed=1;
+function lkGen(){const p=NV[+$('#lkN').value],n=100,r=rng(lkSeed*7919);const X=new Float64Array(n*p);for(let i=0;i<X.length;i++)X[i]=gauss(r);const y=new Int8Array(n);for(let i=0;i<n;i++)y[i]=r()<.5?1:0;return{X,y,n,p};}
+function lkRun(){const k=+$('#lkK').value;$('#lkNv').textContent=NV[+$('#lkN').value].toLocaleString();$('#lkKv').textContent=k;const D=lkGen();const a=cvScore(D,k,'leak',0),b=cvScore(D,k,'pipe',0);LK={D,k,a:a.acc,b:b.acc,top:a.top[0]};
+  $('#lkA').textContent=pct(a.acc);$('#lkB').textContent=pct(b.acc);$('#lkY').textContent=f2([...D.y].reduce((s,v)=>s+v,0)/D.n);lkDraw();spDraw();}
+function lkDraw(){if(!LK)return;const{c,w,h}=prep($('#lkCv'),.5);const L=40,R=w-14,Tp=30,B=h-30,Y=v=>B-(B-Tp)*v;
+  [0,.5,1].forEach(v=>{c.strokeStyle=v===.5?'#5a6b85':'#1e2633';c.setLineDash(v===.5?[4,4]:[]);c.beginPath();c.moveTo(L,Y(v));c.lineTo(R,Y(v));c.stroke();c.setLineDash([]);T(c,(v*100)+'%',L-4,Y(v),'#5a6b85',9,'right');});T(c,'점선 = 동전 던지기 50%',R,8,MU,9,'right');
+  const bw=(R-L)/2;[[LK.a,BAD,'전체 데이터로 열 고른 뒤 CV'],[LK.b,OK,'CV 학습 구간 안에서 고름']].forEach(([v,col,lab],i)=>{const x=L+i*bw+bw*.2;c.fillStyle=col;rr(c,x,Y(v),bw*.6,B-Y(v),6);c.fill();T(c,pct(v),x+bw*.3,Y(v)-10,col,14,'center','middle','800');T(c,lab,x+bw*.3,B+14,MU,10);});
+  const N=LK.D.p;$('#lkMsg').innerHTML=`<div class="res ${LK.a>.7?'r':'y'}">열 ${N.toLocaleString()}개 중 ${LK.k}개를 <b>평가용 데이터까지 포함한 전체</b>로 골랐더니 <b>${pct(LK.a)}</b>. 같은 데이터에서 열 고르기를 교차 검증의 <b>학습 구간 안에서만</b> 하니 <b>${pct(LK.b)}</b> — 동전 던지기 수준, 정직한 숫자. ${N<=300?'열이 적으면 우연히 맞아 보이는 열도 적어 차이가 줄어듭니다. 열을 늘려 보세요.':'열이 많을수록 <b>순전히 우연으로</b> 정답과 맞아 보이는 열이 생깁니다.'}</div>`;}
+function spDraw(){if(!LK)return;const{D,top}=LK,{c,w,h}=prep($('#spCv'),.5);const v=[...Array(D.n).keys()].map(i=>D.X[top*D.n+i]);const lo=Math.min(...v),hi=Math.max(...v),L=20,R=w-20,X=x=>L+(R-L)*(x-lo)/(hi-lo),r=rng(3);
+  [0,1].forEach(k=>{const y=k?h*.3:h*.7;c.strokeStyle='#1e2633';c.beginPath();c.moveTo(L,y);c.lineTo(R,y);c.stroke();T(c,'정답 '+k,L,y-18,k?CB:CA,10,'left','middle','700');});
+  const m=[0,0],cn=[0,0];v.forEach((x,i)=>{const k=D.y[i];m[k]+=x;cn[k]++;c.fillStyle=k?CB:CA;c.globalAlpha=.8;c.beginPath();c.arc(X(x),(k?h*.3:h*.7)+(r()-.5)*16,3.5,0,7);c.fill();});c.globalAlpha=1;
+  [0,1].forEach(k=>{const x=X(m[k]/cn[k]),y=k?h*.3:h*.7;c.strokeStyle=k?CB:CA;c.lineWidth=3;c.beginPath();c.moveTo(x,y-14);c.lineTo(x,y+14);c.stroke();});
+  const n1=cn[1],n0=cn[0],mm=v.reduce((s,x)=>s+x,0)/D.n;let sxy=0,sxx=0,syy=0;const yb=n1/D.n;v.forEach((x,i)=>{sxy+=(x-mm)*(D.y[i]-yb);sxx+=(x-mm)**2;syy+=(D.y[i]-yb)**2;});const cor=sxy/Math.sqrt(sxx*syy);
+  $('#spMsg').innerHTML=`<div class="res y">${LK.D.p.toLocaleString()}개 중 1등 열 (${top}번). 세로 막대는 두 무리의 평균 — 꽤 벌어져 보이고, 상관계수는 <b>${f2(cor)}</b>. 하지만 이 열도 순수한 난수입니다. 열이 많으면 이런 "우연한 1등"이 반드시 나오고, 평가용 정답까지 보고 골랐으니 평가에서 잘 맞는 것은 당연합니다 — <b>시험 문제를 미리 보고 공부한 것</b>, 데이터 누수.</div>`;}
+$('#lkRun').onclick=()=>{lkSeed++;$('#lkRun').disabled=true;$('#lkRun').textContent='계산 중…';setTimeout(()=>{lkRun();$('#lkRun').disabled=false;$('#lkRun').textContent='새 난수로 실험 ▶';vib(20);},30);};
+let lkT;['#lkN','#lkK'].forEach(id=>$(id).oninput=()=>{$('#lkNv').textContent=NV[+$('#lkN').value].toLocaleString();$('#lkKv').textContent=$('#lkK').value;clearTimeout(lkT);lkT=setTimeout(lkRun,250);});
+
+/* ===== ② CRISP-DM ===== */
+const CR=[['비즈니스 이해','무엇을 왜 알고 싶은가? 성공 기준(예: 불량 예측 정확도 80%)을 정합니다.','질문·성공 기준을 문서로'],['데이터 이해','첫 탐색 다섯 줄로 행 수·자료형·결측·중복·범주를 기록합니다.','df.info(), df.describe(), df.isna().sum() …'],['데이터 준비','정렬, 중복 제거, 결측치 채우기, 특성 만들기. 처리 방법은 한곳에 모읍니다.','sort_values, interpolate, rolling, get_dummies'],['모델링','파이프라인으로 전처리와 모델을 묶습니다.','make_pipeline(…, LogisticRegression())'],['평가','교차 검증으로 정직하게 잽니다. 목표에 못 미치면 데이터 준비로 돌아갑니다.','cross_val_score(pipe, X, y, cv=cv)'],['배포','보고서·대시보드·자동 실행. 새 데이터가 오면 처음부터 다시 돌립니다.','main() — 명령 한 줄']];let crSel=0;
+$('#crBtns').innerHTML=CR.map((s,i)=>`<button data-cr="${i}">${i+1}. ${s[0]}</button>`).join('');$$('[data-cr]').forEach(b=>b.onclick=()=>{crSel=+b.dataset.cr;crDraw();vib(8);});
+function crDraw(){$$('[data-cr]').forEach(b=>b.classList.toggle('on',+b.dataset.cr===crSel));const{c,w,h}=prep($('#crCv'),.62);const cx=w/2,cy=h/2,R=Math.min(w*.36,h*.38);const P=CR.map((_,i)=>{const a=-Math.PI/2+i*Math.PI*2/6;return[cx+R*Math.cos(a),cy+R*Math.sin(a)];});
+  c.strokeStyle='#33425a';c.lineWidth=2;c.beginPath();c.arc(cx,cy,R,0,7);c.stroke();for(let i=0;i<6;i++){const a=-Math.PI/2+(i+.5)*Math.PI*2/6;arrow(c,cx+R*Math.cos(a-.06),cy+R*Math.sin(a-.06),cx+R*Math.cos(a+.06),cy+R*Math.sin(a+.06),'#5a6b85',2);}
+  arrow(c,P[4][0]+48,P[4][1],P[2][0]-48,P[2][1],BAD,1.6);T(c,'목표 미달 → 다시 준비',(P[4][0]+P[2][0])/2,P[2][1]-10,BAD,9,'center','middle','700');arrow(c,P[1][0]-14,P[1][1]-6,P[0][0]+30,P[0][1]+8,GO,1.4);T(c,'질문 고치기',(P[0][0]+P[1][0])/2+36,(P[0][1]+P[1][1])/2-8,GO,9,'center','middle','700');
+  CR.forEach(([n],i)=>{const[x,y]=P[i],sel=i===crSel;c.fillStyle=sel?'#4a3e1a':'#1a2230';rr(c,x-46,y-15,92,30,10);c.fill();c.strokeStyle=sel?GO:'#33425a';c.lineWidth=sel?2:1;c.stroke();T(c,n,x,y,sel?FG:MU,10.5,'center','middle','700');});
+  const s=CR[crSel];$('#crBox').innerHTML=`<div class="res ${crSel>=1&&crSel<=4?'g':'y'}"><b>${crSel+1}. ${s[0]}</b> — ${s[1]}<br><span style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;color:#a3b0c2">${esc(s[2])}</span>${crSel>=1&&crSel<=4?'<br><span style="color:#a3b0c2;font-size:.82rem">파이썬 코드가 거의 전부 들어가는 단계 — 따로 노는 셀이 아니라 다시 돌릴 수 있는 하나의 흐름으로</span>':''}</div>`;}
+
+/* 다섯 줄 */
+const ED={time:['08:00','09:00','10:00','11:00','11:00','12:00','13:00','14:00'],temp:['20.1','21.4','오류','23.0','23.0','24.2','24.8','NaN'],hum:['55.0','NaN','58.0','60.0','60.0','NaN','62.0','63.0'],state:['ON','ON','ON','OFF','OFF','OFF','ON','ON']};
+const EDO={info:["&lt;class 'pandas.DataFrame'&gt;\nRangeIndex: 8 entries, 0 to 7\n #  Column  Non-Null Count  Dtype\n 0  time    8 non-null      str\n 1  temp    7 non-null      <span class=\"e\">object</span>\n 2  hum     6 non-null      float64\n 3  state   8 non-null      str",'<b>temp가 object</b> — 숫자여야 할 열에 "오류"라는 글자가 섞여 문자열로 읽혔습니다. 그래서 describe에서도 빠집니다.',[2],['temp']],
+  describe:['        hum\ncount  6.000000\nmean  59.666667\nstd    2.875181\nmin   55.000000\n50%   60.000000\nmax   63.000000','숫자 열 hum만 나옵니다. temp는 문자열이라 <b>통계에서 사라졌습니다</b>.',[],['hum']],
+  isna:['time     0\ntemp     1\nhum      <span class="w">2</span>\nstate    0','빈칸은 temp 1개, hum 2개. 단, "오류"는 글자라서 <b>빈칸으로 세지 않습니다</b> — 숨은 결측.',[1,5,7],['temp','hum']],
+  dup:['1','완전히 같은 행이 <b>1개</b> (11:00이 두 번). 센서가 같은 기록을 두 번 보냈을 수도.',[4],[]],
+  vc:["state\nON     5\nOFF    3\nName: count, dtype: int64",'범주별 개수. 한쪽이 지나치게 적으면 나중에 평가가 치우칠 수 있습니다.',[],['state']]};
+const EDC={info:'df.info()',describe:'df.describe()',isna:'df.isna().sum()',dup:'df.duplicated().sum()',vc:"df['state'].value_counts()"};let edSel=null;const edSeen=new Set();
+$('#edBtns').innerHTML=Object.keys(EDC).map(k=>`<button data-ed="${k}">${EDC[k]}</button>`).join('');$$('[data-ed]').forEach(b=>b.onclick=()=>{edSel=b.dataset.ed;edSeen.add(edSel);edDraw();vib(8);});
+function edDraw(){const o=edSel?EDO[edSel]:null,cols=Object.keys(ED);$$('[data-ed]').forEach(b=>b.style.borderColor=b.dataset.ed===edSel?'#ffd166':edSeen.has(b.dataset.ed)?'#2f7a52':'');
+  $('#edTb').innerHTML=`<thead><tr><th></th>${cols.map(c=>`<th style="${o&&o[3].includes(c)?'color:#ffd166':''}">${c}</th>`).join('')}</tr></thead><tbody>${ED.time.map((_,i)=>`<tr style="${o&&o[2].includes(i)?'background:#3a3218':''}"><th>${i}</th>${cols.map(c=>{const v=ED[c][i];return`<td style="${v==='NaN'?'color:#ff7d7d':v==='오류'?'color:#ffd166;font-weight:800':''}">${v}</td>`;}).join('')}</tr>`).join('')}</tbody>`;
+  $('#edOut').innerHTML=o?`<span class="p">&gt;&gt;&gt; ${esc(EDC[edSel])}</span>\n${o[0]}`:'<span class="p">버튼을 눌러 한 줄씩 실행 (pandas 3.0 출력)</span>';
+  $('#edNote').innerHTML=o?`<div class="res ${edSeen.size===5?'g':'y'}">${o[1]}${edSeen.size===5?'<br><b>다섯 줄 완료.</b> 이 단계에서는 고치지 않고 <b>목록으로 기록</b>: ① temp의 "오류" → 숫자로 바꾸고 결측 처리 ② temp 빈칸 1개, hum 빈칸 2개 ③ 11:00 중복 1행. 처리 방법은 한곳(clean 함수)에 모읍니다.':` (${edSeen.size}/5)`}</div>`:'';}
+
+/* ===== ③ 빈칸 ===== */
+quiz('q1','b',ok=>`<div class="res ${ok?'g':'r'}">${ok?'정답!':'아쉬워요.'} 정답은 <b>12와 14</b>. 10에서 16까지 세 칸 동안 6이 오르니 한 칸에 2씩 — 10, <b>12, 14</b>, 16. 10과 10은 <b>ffill</b>(직전 값 이어 쓰기)의 결과, 13과 13은 평균으로 채운 결과입니다.</div><div class="out">pd.Series([10, NaN, NaN, 16]).interpolate()  → 10, <span class="o">12, 14</span>, 16\npd.Series([10, NaN, NaN, 16]).ffill()        → 10, <span class="w">10, 10</span>, 16</div>`);
+const TT=Array.from({length:72},(_,t)=>20+5*Math.sin(2*Math.PI*(t-8)/24));let gm='lin';
+function gpFill(L,m){const a=30,b=Math.min(70,a+L-1),F=TT.slice(),flag=Array(72).fill(false);for(let t=a;t<=b;t++){flag[t]=true;}const lo=a-1,hi=b+1;
+  for(let t=a;t<=b;t++){if(m==='ff')F[t]=TT[lo];else{const v=TT[lo]+(TT[hi]-TT[lo])*(t-lo)/(hi-lo);F[t]=m==='lim'&&t-a>=3?NaN:v;}}return{F,flag,a,b};}
+function gpDraw(){const L=+$('#gpL').value;$('#gpLv').textContent=L;const{F,flag,a,b}=gpFill(L,gm);const{c,w,h}=prep($('#gpCv'),.56);const Lp=30,R=w-10,Tp=10,B=h-22,X=t=>Lp+(R-Lp)*t/71,Y=v=>B-(B-Tp)*(v-13)/14;
+  [15,20,25].forEach(v=>{c.strokeStyle='#1e2633';c.beginPath();c.moveTo(Lp,Y(v));c.lineTo(R,Y(v));c.stroke();T(c,v+'°',Lp-4,Y(v),'#5a6b85',9,'right');});[0,24,48,71].forEach(t=>T(c,t+'시',X(t),B+12,'#5a6b85',9));
+  c.fillStyle='rgba(255,209,102,.08)';c.fillRect(X(a-.5),Tp,X(b+.5)-X(a-.5),B-Tp);
+  c.strokeStyle='#5a6b85';c.setLineDash([3,3]);c.lineWidth=1.2;c.beginPath();TT.forEach((v,t)=>t?c.lineTo(X(t),Y(v)):c.moveTo(X(t),Y(v)));c.stroke();c.setLineDash([]);
+  c.strokeStyle=CA;c.lineWidth=2;c.beginPath();let pen=false;F.forEach((v,t)=>{if(flag[t]||isNaN(v)){pen=false;return;}pen?c.lineTo(X(t),Y(v)):c.moveTo(X(t),Y(v));pen=true;});c.stroke();
+  let me=0,nf=0,nn=0;for(let t=a;t<=b;t++){if(isNaN(F[t])){nn++;c.fillStyle=BAD;T(c,'×',X(t),Y(13.8),BAD,10,'center','middle','800');continue;}nf++;me=Math.max(me,Math.abs(F[t]-TT[t]));c.fillStyle=GO;c.beginPath();c.arc(X(t),Y(F[t]),3,0,7);c.fill();}
+  T(c,'점선 = 실제 온도, 노랑 = 채운 값',R,Tp+6,MU,9,'right');
+  $('#gpOut').innerHTML=`${a}시 ~ ${b}시, ${b-a+1}칸 비움 → ${{lin:'interpolate()',ff:'ffill()',lim:'interpolate(limit=3)'}[gm]}\n채운 칸 ${nf}개, 최대 오차 <span class="${me>2?'e':'o'}">${f2(me)} °C</span>${nn?`\n남은 빈칸 <span class="w">${nn}개</span> — 그대로 두고 imputed 표시 열로 구분`:''}\n<span class="p">${gm==='lin'&&L===2?'원고: 2칸 공백 최대 오차 0.14 °C':gm==='lin'&&L===20?'원고: 20칸 공백 최대 오차 9.2 °C — 그사이 온도가 올랐다 내려갔는데 직선은 그 굴곡을 모름':gm==='ff'?'ffill은 스위치·설정값처럼 바뀌기 전까지 유지되는 값에 맞음':'긴 공백일수록 직선 가정이 무너짐 — limit으로 연속 채울 칸 수를 제한'}</span>`;}
+$('#gpL').oninput=gpDraw;single('[data-gm]','gm',v=>{gm=v;gpDraw();});
+const FT=[15.7,15.2,15.0,15.2,15.7,16.5,17.5,18.7,20.0,21.3,22.5,23.5],FR=[null,null,null,null,null,15.55,15.85,16.43,17.27,18.28,19.42,20.58],FD=[null,-0.5,-0.2,0.2,0.5,0.8,1.0,1.2,1.3,1.3,1.2,1.0],FS=['OFF','OFF','OFF','ON','ON','ON','ON','ON','ON','OFF','OFF','ON'];let ft='roll';
+function ftDraw(){const nv=v=>v==null?'<td style="color:#ff7d7d">NaN</td>':`<td style="color:#ffd166">${ft==='diff'?v.toFixed(1):v.toFixed(2)}</td>`;const hd=ft==='roll'?['roll6']:ft==='diff'?['d1']:['state_OFF','state_ON'];
+  $('#ftTb').innerHTML=`<thead><tr><th>t</th><th>temp</th>${ft==='dum'?'':'<th>state</th>'}${hd.map(x=>`<th style="color:#ffd166">${x}</th>`).join('')}</tr></thead><tbody>${FT.map((v,i)=>`<tr><th>${i}</th><td>${v.toFixed(1)}</td>${ft==='dum'?'':`<td>${FS[i]}</td>`}${ft==='roll'?nv(FR[i]):ft==='diff'?nv(FD[i]):`<td style="color:${FS[i]==='OFF'?'#6fdc9a':'#5a6b85'}">${FS[i]==='OFF'?'True':'False'}</td><td style="color:${FS[i]==='ON'?'#6fdc9a':'#5a6b85'}">${FS[i]==='ON'?'True':'False'}</td>`}</tr>`).join('')}</tbody>`;
+  $('#ftOut').innerHTML={roll:"df['roll6'] = df['temp'].rolling(6).mean()\n<span class=\"p\"># 직전 여섯 시간 평균 — 앞 5칸은 재료가 모자라 NaN</span>",diff:"df['d1'] = df['temp'].diff()\n<span class=\"p\"># 한 시간 전과의 차이 — 첫 칸은 비교 대상이 없어 NaN</span>",dum:"pd.get_dummies(df, columns=['state'])\n<span class=\"p\"># 원 핫 인코딩 — 범주마다 True/False 열 (pandas 3은 bool)</span>"}[ft]+'\n<span class="p"># 단위가 다른 열은 스케일링 — 단, 평균·표준편차를 어느 데이터로 구하느냐가 누수의 갈림길</span>';}
+single('[data-ft]','ft',v=>{ft=v;ftDraw();});
+
+/* ===== ④ 파이프라인 ===== */
+let ppM='leak';
+function ppDraw(){const{c,w,h}=prep($('#ppCv'),.66);const L=58,R=w-12,top=34,rh=(h-top-30)/5;T(c,'100개 표본 → 5겹 교차 검증',L,14,MU,10,'left');
+  for(let f=0;f<5;f++){const y=top+f*rh,bw=(R-L);T(c,`${f+1}겹`,L-8,y+rh/2-2,MU,10,'right');for(let s=0;s<5;s++){const x=L+s*bw/5;c.fillStyle=s===f?'#8a4a2a':'#1d3554';c.fillRect(x+1,y+4,bw/5-2,rh-12);}
+    c.strokeStyle=GO;c.lineWidth=2.5;if(ppM==='leak'){c.strokeRect(L-1,y+2,bw+2,rh-8);}else{for(let s=0;s<5;s++)if(s!==f){c.strokeRect(L+s*bw/5+1,y+2,bw/5-2,rh-8);}}}
+  c.fillStyle='#1d3554';c.fillRect(L,h-18,12,10);T(c,'학습',L+16,h-13,MU,10,'left');c.fillStyle='#8a4a2a';c.fillRect(L+56,h-18,12,10);T(c,'평가',L+72,h-13,MU,10,'left');c.strokeStyle=GO;c.lineWidth=2;c.strokeRect(L+112,h-18,12,10);T(c,'열 고르기 fit이 본 곳',L+128,h-13,GO,10,'left','middle','700');
+  $('#ppMsg').innerHTML=ppM==='leak'?`<div class="res r">노란 테두리가 <b>평가 칸(주황)까지</b> 덮습니다. 열 고르기가 평가용 정답을 이미 봤으니, 그 뒤의 교차 검증은 시험지를 본 학생의 점수 — ①의 <b>${LK?pct(LK.a):'87%'}</b>. 결측치를 전체 평균으로 채우거나, 전체로 스케일링해도 같은 누수입니다.</div>`:`<div class="res g">파이프라인을 통째로 교차 검증에 넘기면, 나눌 때마다 <b>학습 칸만으로</b> 다시 fit하고 평가 칸에는 <b>적용만</b> 합니다 — ①의 <b>${LK?pct(LK.b):'47%'}</b>. 결측치 채우기·스케일링·열 고르기·모델을 모두 한 파이프라인에.</div>`;}
+single('[data-pp]','pp',v=>{ppM=v;ppDraw();});
+let sdM='fix',sdN=0;const sdLines=[];
+$('#sdRun').onclick=()=>{if(!LK){toast('①에서 먼저 실험해 주세요');return;}const seed=sdM==='fix'?0:Math.floor(Math.random()*1e6);const r=cvScore(LK.D,LK.k,'pipe',seed);sdN++;sdLines.unshift(`${sdN}회  ${sdM==='fix'?'random_state=0     ':'random_state=None  '} → <span class="${sdM==='fix'?'o':'w'}">${f2(r.acc,3)}</span>`);$('#sdOut').innerHTML=sdLines.slice(0,8).join('\n');vib(10);};
+$('#sdClr').onclick=()=>{sdLines.length=0;sdN=0;$('#sdOut').innerHTML='<span class="p">다시 돌리기를 여러 번 눌러 보세요</span>';};
+single('[data-sd]','sd',v=>{sdM=v;});
+$('#rpMake').onclick=()=>{if(!LK){toast('①에서 먼저 실험해 주세요');return;}const cv=document.createElement('canvas');cv.width=480;cv.height=240;const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,480,240);
+  [[LK.a,'#d9534f','누수'],[LK.b,'#2e8b57','파이프라인']].forEach(([v,col,l],i)=>{c.fillStyle=col;c.fillRect(80+i*180,200-170*v,120,170*v);c.fillStyle='#222';c.font='bold 16px sans-serif';c.textAlign='center';c.fillText(pct(v),140+i*180,190-170*v);c.font='14px sans-serif';c.fillText(l,140+i*180,224);});
+  c.strokeStyle='#999';c.setLineDash([5,4]);c.beginPath();c.moveTo(40,115);c.lineTo(460,115);c.stroke();
+  const url=cv.toDataURL('image/png'),b64=url.split(',')[1],pad=(b64.match(/=+$/)||[''])[0].length,bytes=b64.length*3/4-pad;
+  $('#rpBox').innerHTML=`<div class="rep"><h3>분석 보고서</h3><table><tr><th>방식</th><th>정확도</th></tr><tr><td>전체로 고른 뒤 CV</td><td>${f2(LK.a,3)}</td></tr><tr><td>파이프라인 CV</td><td>${f2(LK.b,3)}</td></tr></table><img src="${url}" alt="정확도 막대그래프"></div>`;
+  $('#rpOut').innerHTML=`PNG ${fmt(bytes)}바이트 → base64 <span class="w">${fmt(b64.length)}글자</span>  (× ${f2(b64.length/bytes)})\n<span class="p">그림 파일 경로가 깨질 걱정 없이 파일 하나에 — 대신 크기가 약 4/3배</span>`;vib(20);};
+quiz('q2','b',ok=>`<div class="res ${ok?'g':'r'}">${ok?'정답!':'아쉬워요.'} 정답은 <b>약 400KB</b>. base64는 <b>3바이트를 글자 4개</b>로 바꾸니 크기가 4/3배. 원고 실험: 300,000바이트 → 정확히 <b>400,000글자</b>. 그림이 수십 장이면 해상도를 낮추거나 압축해서 넣습니다.</div>`);
+function b6Draw(){const k=+$('#b6K').value;$('#b6Kv').textContent=k;const b=k*1000,ch=4*Math.ceil(b/3);$('#b6Out').innerHTML=`${fmt(b)}바이트 ÷ 3 = ${fmt(Math.ceil(b/3))}묶음 × 4글자 = <span class="w">${fmt(ch)}글자</span> (약 ${fmt(ch/1000)}KB)`;}
+$('#b6K').oninput=b6Draw;
+
+/* 나의 예 */
+const MK='pipeworkshop.mine';let mine=[];try{mine=JSON.parse(localStorage.getItem(MK)||'[]');if(!Array.isArray(mine))mine=[];}catch(e){mine=[];}
+const saveM=()=>{try{localStorage.setItem(MK,JSON.stringify(mine));}catch(e){}};
+function drawMine(){$('#mine').innerHTML=mine.length?mine.map((m,i)=>`<div><span>🛠️ ${esc(m)}</span><button data-d="${i}" aria-label="지우기">✕</button></div>`).join(''):'<p class="note">좋은 숫자일수록 의심해 보기.</p>';
+  $$('#mine button').forEach(b=>b.onclick=()=>{mine.splice(+b.dataset.d,1);saveM();drawMine();});}
+$('#myAdd').onclick=()=>{const v=$('#myIn').value.trim();if(!v)return;mine.unshift(v);mine=mine.slice(0,30);saveM();$('#myIn').value='';drawMine();toast('기록했습니다!');};
+$('#myIn').addEventListener('keydown',e=>{if(e.key==='Enter')$('#myAdd').click();});
+
+function redraw(){if(!$('#tab-t1').hidden){lkDraw();spDraw();}if(!$('#tab-t2').hidden){crDraw();}if(!$('#tab-t3').hidden){gpDraw();}if(!$('#tab-t4').hidden){ppDraw();}}
+function show(t){$$('.tabs button').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));['t1','t2','t3','t4'].forEach(k=>$('#tab-'+k).hidden=k!==t);redraw();window.scrollTo(0,0);}
+$$('.tabs button').forEach(b=>b.onclick=()=>show(b.dataset.tab));
+let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(redraw,120);});
+edDraw();ftDraw();b6Draw();drawMine();$('#sdClr').click();setTimeout(()=>{lkRun();redraw();},20);
+})();
+</script>
+</body>
+</html>
